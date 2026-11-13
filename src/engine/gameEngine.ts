@@ -17,8 +17,8 @@ import {
   StandingRow,
   Trait,
 } from '../types/brasfoot';
+import { CAREER_VERSION } from '../utils/saveStore';
 
-export const SAVE_STORAGE_KEY = 'brasfoot_2026_career_v1';
 
 // Gera tabela Todos contra Todos (método Berger)
 function generateRoundRobinPairs(clubIds: string[], doubleRound: boolean): [string, string][][] {
@@ -206,7 +206,7 @@ export function createNewCareer(
   const userClub = updatedClubs.find((c) => c.id === userClubId)!;
 
   return {
-    version: 1,
+    version: CAREER_VERSION,
     coachName: coachName.trim() || 'Técnico',
     userClubId,
     year: 2026,
@@ -1131,11 +1131,17 @@ export function startNextSeason(state: CareerState): CareerState {
   // Aplica acesso e rebaixamento
   for (const id of relegatedIds) {
     const c = clubsMap.get(id);
-    if (c) c.division = 'B';
+    if (c) {
+      c.division = 'B';
+      c.leagueId = 'BRA2';
+    }
   }
   for (const id of promotedIds) {
     const c = clubsMap.get(id);
-    if (c) c.division = 'A';
+    if (c) {
+      c.division = 'A';
+      c.leagueId = 'BRA1';
+    }
   }
 
   // Evolução anual dos jogadores (idade +1, jovens sobem Força, veteranos caem, estatísticas zeram)
@@ -1148,7 +1154,7 @@ export function startNextSeason(state: CareerState): CareerState {
     else if (newAge >= 34 && Math.random() < 0.55) delta = -1;
     else if (newAge >= 37 && Math.random() < 0.75) delta = -2;
 
-    const newOvr = Math.max(58, Math.min(95, p.ovr + delta));
+    const newOvr = Math.max(38, Math.min(95, p.ovr + delta));
     return {
       ...p,
       age: newAge,

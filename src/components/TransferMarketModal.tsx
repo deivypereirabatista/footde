@@ -3,6 +3,13 @@ import { X, Search, Star, DollarSign, Briefcase, Check, XCircle } from 'lucide-r
 import { CareerState, IncomingOffer, Player, Position, TRAIT_NAMES } from '../types/brasfoot';
 import { formatMoney } from '../engine/gameEngine';
 import { ClubBadge } from './ClubBadge';
+import { WORLD_LEAGUES, LEAGUE_BY_ID } from '../data/clubsAndPlayers';
+
+// Ligas agrupadas por continente para o filtro de origem
+const LEAGUES_BY_CONTINENT = WORLD_LEAGUES.reduce<Record<string, typeof WORLD_LEAGUES>>((acc, l) => {
+  (acc[l.continent] ||= []).push(l);
+  return acc;
+}, {});
 
 interface TransferMarketModalProps {
   state: CareerState;
@@ -24,7 +31,7 @@ export const TransferMarketModal: React.FC<TransferMarketModalProps> = ({
   );
   const [query, setQuery] = useState('');
   const [posFilter, setPosFilter] = useState<'ALL' | Position>('ALL');
-  const [originFilter, setOriginFilter] = useState<'ALL' | 'FREE' | 'A' | 'B' | 'INT'>('ALL');
+  const [originFilter, setOriginFilter] = useState<string>('ALL'); // ALL | FREE | A | B | INT | CONT:<continente> | LG:<liga>
   const [affordableOnly, setAffordableOnly] = useState(false);
   const [negotiatingPlayer, setNegotiatingPlayer] = useState<Player | null>(null);
   const [offerMultiplier, setOfferMultiplier] = useState<number>(1.1);
@@ -44,7 +51,12 @@ export const TransferMarketModal: React.FC<TransferMarketModalProps> = ({
           if (p.clubId !== 'FREE') return false;
         } else if (originFilter !== 'ALL') {
           const cl = clubsMap.get(p.clubId);
-          if (!cl || cl.division !== originFilter) return false;
+          if (!cl) return false;
+          if (originFilter.startsWith('LG:')) {
+            if (cl.leagueId !== originFilter.slice(3)) return false;
+          } else if (originFilter.startsWith('CONT:')) {
+            if (cl.continent !== originFilter.slice(5)) return false;
+          } else if (cl.division !== originFilter) return false;
         }
 
         if (affordableOnly) {
@@ -216,14 +228,26 @@ export const TransferMarketModal: React.FC<TransferMarketModalProps> = ({
                 <div className="sm:col-span-3">
                   <select
                     value={originFilter}
-                    onChange={(e) => setOriginFilter(e.target.value as typeof originFilter)}
+                    onChange={(e) => setOriginFilter(e.target.value)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
                   >
                     <option value="ALL">Todos os Mercados</option>
                     <option value="FREE">Sem Contrato (Passe Livre)</option>
                     <option value="A">Brasileirão Série A</option>
                     <option value="B">Brasileirão Série B</option>
-                    <option value="INT">Exterior / Mundo</option>
+                    <option value="INT">Exterior / Mundo (todos)</option>
+                    {Object.entries(LEAGUES_BY_CONTINENT).map(([continent, leagues]) => (
+                      <optgroup key={continent} label={continent}>
+                        <option value={`CONT:${continent}`}>{continent} (todas as ligas)</option>
+                        {leagues
+                          .filter((l) => l.cc !== 'BRA')
+                          .map((l) => (
+                            <option key={l.id} value={`LG:${l.id}`}>
+                              {l.country} — {l.name}
+                            </option>
+                          ))}
+                      </optgroup>
+                    ))}
                   </select>
                 </div>
                 <div className="sm:col-span-2 flex items-center">
@@ -325,6 +349,7 @@ export const TransferMarketModal: React.FC<TransferMarketModalProps> = ({
                           <td className="py-2 px-2.5 font-bold text-white">
                             <div className="flex items-center gap-1.5">
                               <span>{p.name}</span>
+                              {p.nat && <span className="text-[10px] font-semibold text-slate-500">{p.nat}</span>}
                               {p.star && (
                                 <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
                               )}
@@ -339,6 +364,11 @@ export const TransferMarketModal: React.FC<TransferMarketModalProps> = ({
                               <div className="flex items-center gap-1.5">
                                 {cl && <ClubBadge club={cl} size="xs" />}
                                 <span className="text-slate-300">{cl?.shortName}</span>
+                                {cl?.leagueId && cl.division === 'INT' && (
+                                  <span className="text-[10px] text-slate-500 hidden md:inline">
+                                    {LEAGUE_BY_ID[cl.leagueId]?.country}
+                                  </span>
+                                )}
                               </div>
                             )}
                           </td>

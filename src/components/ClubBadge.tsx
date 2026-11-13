@@ -14,9 +14,35 @@ const SIZE_PX: Record<NonNullable<ClubBadgeProps['size']>, number> = {
   xl: 72,
 };
 
+const failedLogos = new Set<string>();
+
 export const ClubBadge: React.FC<ClubBadgeProps> = ({ club, size = 'md' }) => {
   const reactId = React.useId().replace(/:/g, '');
+  const [logoFailed, setLogoFailed] = React.useState(false);
   const px = SIZE_PX[size];
+
+  // Escudo real (baixado da Wikipedia para public/logos/)
+  if (club?.logo && !logoFailed && !failedLogos.has(club.logo)) {
+    const logo = club.logo;
+    return (
+      <img
+        src={`${import.meta.env.BASE_URL}${logo}`}
+        width={px}
+        height={px}
+        alt={club.shortName}
+        title={club.shortName}
+        loading="lazy"
+        draggable={false}
+        className="shrink-0 select-none object-contain drop-shadow-sm"
+        style={{ width: px, height: px }}
+        onError={() => {
+          failedLogos.add(logo);
+          setLogoFailed(true);
+        }}
+      />
+    );
+  }
+
   if (!club) {
     return (
       <div

@@ -33,10 +33,10 @@ import {
   formatMoney,
   generateYouthWonderkid,
   LiveMatchState,
-  SAVE_STORAGE_KEY,
   startNextSeason,
 } from './engine/gameEngine';
 import { ClubBadge } from './components/ClubBadge';
+import { loadCareer, saveCareer } from './utils/saveStore';
 import { StartScreen } from './components/StartScreen';
 import { PitchView } from './components/PitchView';
 import { LiveMatchModal } from './components/LiveMatchModal';
@@ -44,22 +44,20 @@ import { TablesModal } from './components/TablesModal';
 import { TransferMarketModal } from './components/TransferMarketModal';
 import { ClubManagementModal } from './components/ClubManagementModal';
 
-function loadSavedCareer(): CareerState | null {
-  try {
-    const raw = localStorage.getItem(SAVE_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as CareerState;
-    if (parsed && parsed.clubs && parsed.players && parsed.userClubId) {
-      return parsed;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
 
 export default function App() {
-  const [savedPreview, setSavedPreview] = useState<CareerState | null>(() => loadSavedCareer());
+  const [savedPreview, setSavedPreview] = useState<CareerState | null>(null);
+
+  // Carrega o save do IndexedDB ao abrir o jogo
+  useEffect(() => {
+    let alive = true;
+    loadCareer().then((saved) => {
+      if (alive && saved) setSavedPreview(saved);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
   const [career, setCareer] = useState<CareerState | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
@@ -73,12 +71,13 @@ export default function App() {
   // Salva automaticamente a cada alteração na carreira
   useEffect(() => {
     if (career) {
-      try {
-        localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(career));
-        setSavedPreview(career);
-      } catch {
-        // ignora quota cheia
-      }
+      // pequeno atraso agrupa várias alterações seguidas num único salvamento
+      const t = setTimeout(() => {
+        saveCareer(career)
+          .then(() => setSavedPreview(career))
+          .catch((err) => console.error('Falha ao salvar carreira', err));
+      }, 400);
+      return () => clearTimeout(t);
     }
   }, [career]);
 

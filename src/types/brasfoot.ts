@@ -60,6 +60,7 @@ export interface Player {
   wage: number; // salário por rodada em R$
   value: number; // valor de mercado em R$
   clubId: string; // 'FREE' para sem contrato
+  nat?: string; // código FIFA da nacionalidade (ex.: BRA, ARG)
   isStarter: boolean;
   slotIndex?: number; // 0..10 para titulares na formação
 }
@@ -116,6 +117,20 @@ export interface Club {
   youthLevel: number; // 1-5 nível da base
   coachName: string;
   tactics: Tactics;
+  leagueId?: string; // ex.: ENG1, BRA1 (ver src/data/world.json)
+  country?: string;
+  continent?: string;
+  logo?: string; // caminho do escudo em public/ (ex.: logos/arsenal-f-c.png)
+  rating?: number; // força média estimada do clube
+}
+
+export interface League {
+  id: string;
+  name: string;
+  country: string;
+  cc: string;
+  continent: string;
+  tier: number;
 }
 
 export type CompetitionType = 'SERIE_A' | 'SERIE_B' | 'COPA_BR';

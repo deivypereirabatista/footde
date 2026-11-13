@@ -1,0 +1,21 @@
+# Dependências e build
+node_modules/
+dist/
+
+# Cache da coleta de dados (respostas da Wikipedia/Wikidata, centenas de MB)
+scripts/.cache/
+
+# Sistema / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.log
+npm-debug.log*
+
+# Variáveis de ambiente (futuro banco de dados)
+.env
+.env.*
+!.env.example
